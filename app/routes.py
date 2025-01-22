@@ -54,7 +54,7 @@ bp.add_url_rule("/uploads/<name>", endpoint="download_file", build_only=True)
 IMAGE_FOLDER = r"E:\work\flask\uploads"
 
 
-@bp.route("/upload/<filename>")
+@bp.route("/uploads/<filename>")
 def serve_image(filename):
     # 检查文件是否存在以及是否是安全的文件名（防止路径遍历攻击）
     file_path = os.path.join(IMAGE_FOLDER, filename)
