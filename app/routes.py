@@ -51,21 +51,21 @@ def upload():
         else:
 
             results = model(source, save=True)
-            # shutil.move(
-            #     results[0].save_dir + "/" + filename.split(".")[0] + ".avi",
-            #     Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi",
-            # )
-            # file_url = (
-            #     request.host_url
-            #     + Config.PREDICT_FOLDER
-            #     + "/"
-            #     + filename.split(".")[0]
-            #     + ".avi"
-            # )
+            shutil.move(
+                results[0].save_dir + "/" + filename.split(".")[0] + ".avi",
+                Config.PREDICT_FOLDER,
+            )
+            file_url = (
+                request.host_url
+                + Config.PREDICT_FOLDER
+                + "/"
+                + filename.split(".")[0]
+                + ".avi"
+            )
 
-        # return jsonify(
-        #     {"code": 200, "message": "Upload Success!", "file_path": file_url}
-        # )
+        return jsonify(
+            {"code": 200, "message": "Upload Success!", "file_path": file_url}
+        )
 
     return jsonify({"code": 400, "message": "File type not allowed"})
 
