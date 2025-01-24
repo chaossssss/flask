@@ -3,3 +3,4 @@ app/__pycache__/
 uploads/
 predict/
 runs/
+ultralytics-main/
