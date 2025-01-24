@@ -3,14 +3,15 @@ import os
 from config import Config
 from werkzeug.utils import secure_filename
 from ultralytics import YOLO
+import shutil
 
-model = YOLO("yolo11n.pt")
+model = YOLO("buou-best.pt")
 
 
 bp = Blueprint("main", __name__)
 
 # UPLOAD_FOLDER = "uploads"
-ALLOWED_EXTENSIONS = {"txt", "pdf", "png", "jpg", "jpeg", "gif"}
+ALLOWED_EXTENSIONS = {"txt", "pdf", "png", "jpg", "jpeg", "gif", "mp4"}
 
 
 # 检查文件扩展名是否允许
@@ -39,10 +40,32 @@ def upload():
         file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
         # file.save(os.path.join(Config.UPLOAD_FOLDER, filename))
         file.save(file_path)
-        file_url = request.host_url + "uploads/" + filename
-        return jsonify(
-            {"code": 200, "message": "Upload Success!", "file_path": file_url}
-        )
+        source = "uploads/" + filename
+        # 图片文件
+        if filename.split(".")[-1] in ["png", "jpg", "jpeg"]:
+            results = model([source])
+            for result in results:
+                result.save(filename=Config.PREDICT_FOLDER + "/" + filename)
+            file_url = request.host_url + Config.PREDICT_FOLDER + "/" + filename
+        # 视频文件
+        else:
+
+            results = model(source, save=True)
+            # shutil.move(
+            #     results[0].save_dir + "/" + filename.split(".")[0] + ".avi",
+            #     Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi",
+            # )
+            # file_url = (
+            #     request.host_url
+            #     + Config.PREDICT_FOLDER
+            #     + "/"
+            #     + filename.split(".")[0]
+            #     + ".avi"
+            # )
+
+        # return jsonify(
+        #     {"code": 200, "message": "Upload Success!", "file_path": file_url}
+        # )
 
     return jsonify({"code": 400, "message": "File type not allowed"})
 
@@ -55,10 +78,10 @@ def download_file(name):
 bp.add_url_rule("/uploads/<name>", endpoint="download_file", build_only=True)
 
 # 存放图片的文件夹的路径
-IMAGE_FOLDER = r"E:\work\flask\uploads"
+IMAGE_FOLDER = r"E:\work\flask\predict"
 
 
-@bp.route("/uploads/<filename>")
+@bp.route("/predict/<filename>")
 def serve_image(filename):
     # 检查文件是否存在以及是否是安全的文件名（防止路径遍历攻击）
     file_path = os.path.join(IMAGE_FOLDER, filename)
