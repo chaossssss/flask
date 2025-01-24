@@ -52,16 +52,26 @@ def upload():
         else:
 
             results = model(source, save=True)
+
+            if os.path.exists(
+                Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi"
+            ):
+                os.remove(Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi")
+
             shutil.move(
                 results[0].save_dir + "/" + filename.split(".")[0] + ".avi",
                 Config.PREDICT_FOLDER,
+            )
+            convert_avi_to_mp4(
+                Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi",
+                Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".mp4",
             )
             file_url = (
                 request.host_url
                 + Config.PREDICT_FOLDER
                 + "/"
                 + filename.split(".")[0]
-                + ".avi"
+                + ".mp4"
             )
 
         return jsonify(
@@ -85,7 +95,7 @@ def download_file(name):
 bp.add_url_rule("/uploads/<name>", endpoint="download_file", build_only=True)
 
 # 存放图片的文件夹的路径
-IMAGE_FOLDER = r"E:\work\flask\predict"
+IMAGE_FOLDER = r"F:\work\innovate\flask\predict"
 
 
 @bp.route("/predict/<filename>")
