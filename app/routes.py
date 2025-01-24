@@ -2,6 +2,10 @@ from flask import Blueprint, request, jsonify, send_from_directory
 import os
 from config import Config
 from werkzeug.utils import secure_filename
+from ultralytics import YOLO
+
+model = YOLO("yolo11n.pt")
+
 
 bp = Blueprint("main", __name__)
 
