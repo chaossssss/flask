@@ -3,6 +3,7 @@ import os
 from config import Config
 from werkzeug.utils import secure_filename
 from ultralytics import YOLO
+from moviepy.editor import VideoFileClip
 import shutil
 
 model = YOLO("buou-best.pt")
@@ -68,6 +69,12 @@ def upload():
         )
 
     return jsonify({"code": 400, "message": "File type not allowed"})
+
+
+def convert_avi_to_mp4(input_file, output_file):
+    video = VideoFileClip(input_file)
+    video.write_videofile(output_file, codec="libx264")
+    video.close()
 
 
 @bp.route("/download/<name>")
