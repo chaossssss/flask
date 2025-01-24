@@ -3,7 +3,7 @@ import os
 from config import Config
 from werkzeug.utils import secure_filename
 from ultralytics import YOLO
-from moviepy.editor import VideoFileClip
+from moviepy import VideoFileClip
 import shutil
 
 model = YOLO("buou-best.pt")
