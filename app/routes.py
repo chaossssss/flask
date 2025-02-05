@@ -25,6 +25,11 @@ def home():
     return {"code": 200, "message": "Hello, World!"}
 
 
+def getToal(predictor):
+    r = predictor.results[0]
+    print(r[0])
+
+
 # 文件上传
 @bp.route("/upload", methods=["POST"])
 def upload():
@@ -44,10 +49,33 @@ def upload():
         source = "uploads/" + filename
         # 图片文件
         if filename.split(".")[-1] in ["png", "jpg", "jpeg"]:
+            # 回调
+            # model.add_callback("on_predict_postprocess_end", getToal)
             results = model([source])
             for result in results:
+                # result.save_txt("predict.txt")
+                # 具体结果
+                summary = result.summary()
+                # print(result.to_csv())
+                try:
+                    boxes = result.boxes
+                    if boxes.is_track:
+                        track_ids = boxes.id
+                        print(f"Track IDs: {track_ids}")
+                except Exception as e:
+                    pass
+
                 result.save(filename=Config.PREDICT_FOLDER + "/" + filename)
             file_url = request.host_url + Config.PREDICT_FOLDER + "/" + filename
+            return jsonify(
+                {
+                    "code": 200,
+                    "message": "Upload Success!",
+                    "file_path": file_url,
+                    "summary": summary,
+                }
+            )
+
         # 视频文件
         else:
 
@@ -74,9 +102,13 @@ def upload():
                 + ".mp4"
             )
 
-        return jsonify(
-            {"code": 200, "message": "Upload Success!", "file_path": file_url}
-        )
+            return jsonify(
+                {
+                    "code": 200,
+                    "message": "Upload Success!",
+                    "file_path": file_url,
+                }
+            )
 
     return jsonify({"code": 400, "message": "File type not allowed"})
 
@@ -95,7 +127,8 @@ def download_file(name):
 bp.add_url_rule("/uploads/<name>", endpoint="download_file", build_only=True)
 
 # 存放图片的文件夹的路径
-IMAGE_FOLDER = r"F:\work\innovate\flask\predict"
+# IMAGE_FOLDER = r"F:\work\innovate\flask\predict"
+IMAGE_FOLDER = r"E:\work\flask\predict"
 
 
 @bp.route("/predict/<filename>")
