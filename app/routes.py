@@ -2,9 +2,11 @@ from flask import Blueprint, request, jsonify, send_from_directory
 import os
 from config import Config
 from werkzeug.utils import secure_filename
-from ultralytics import YOLO
+from ultralytics import YOLO, solutions
 from moviepy import VideoFileClip
 import shutil
+import cv2
+
 
 model = YOLO("buou-best.pt")
 
@@ -111,6 +113,96 @@ def upload():
             )
 
     return jsonify({"code": 400, "message": "File type not allowed"})
+
+
+# 车流量
+@bp.route("/upload2", methods=["POST"])
+def upload2():
+    if "file" not in request.files:
+        return jsonify({"code": 400, "message": "No file part"})
+
+    file = request.files["file"]
+
+    if file.filename == "":
+        return jsonify({"code": 400, "message": "No selected file"})
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
+        file.save(file_path)
+        source = "uploads/" + filename
+
+        # results = model(source, save=True)
+
+        count_objects_in_region(
+            source,
+            Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi",
+            "yolo11n.pt",
+        )
+
+        # if os.path.exists(
+        #     Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi"
+        # ):
+        #     os.remove(Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi")
+
+        # shutil.move(
+        #     results[0].save_dir + "/" + filename.split(".")[0] + ".avi",
+        #     Config.PREDICT_FOLDER,
+        # )
+        convert_avi_to_mp4(
+            Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi",
+            Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + "_result.mp4",
+        )
+        file_url = (
+            request.host_url
+            + Config.PREDICT_FOLDER
+            + "/"
+            + filename.split(".")[0]
+            + "_result.mp4"
+        )
+
+        return jsonify(
+            {
+                "code": 200,
+                "message": "Upload Success!",
+                "file_path": file_url,
+            }
+        )
+
+    return jsonify({"code": 400, "message": "File type not allowed"})
+
+
+def count_objects_in_region(video_path, output_video_path, model_path):
+    """Count objects in a specific region within a video."""
+    cap = cv2.VideoCapture(video_path)
+    assert cap.isOpened(), "Error reading video file"
+    w, h, fps = (
+        int(cap.get(x))
+        for x in (cv2.CAP_PROP_FRAME_WIDTH, cv2.CAP_PROP_FRAME_HEIGHT, cv2.CAP_PROP_FPS)
+    )
+    video_writer = cv2.VideoWriter(
+        output_video_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h)
+    )
+
+    region_points = [(20, 200), (1080, 200)]
+    # region_points = [(20, 200), (1080, 200), (1080, 150), (20, 150)]
+    counter = solutions.ObjectCounter(
+        show=False, region=region_points, model=model_path
+    )
+
+    while cap.isOpened():
+        success, im0 = cap.read()
+        if not success:
+            print(
+                "Video frame is empty or video processing has been successfully completed."
+            )
+            break
+        im0 = counter.count(im0)
+        video_writer.write(im0)
+
+    cap.release()
+    video_writer.release()
+    cv2.destroyAllWindows()
 
 
 def convert_avi_to_mp4(input_file, output_file):
