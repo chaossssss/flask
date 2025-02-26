@@ -10,7 +10,7 @@ import cv2
 import requests
 
 model = YOLO("buou-best.pt")
-
+accident_model = YOLO("accident-best.pt")
 
 bp = Blueprint("main", __name__)
 
@@ -194,7 +194,7 @@ def upload3():
         file.save(file_path)
         source = "uploads/" + filename
 
-        results = model(source, save=True, save_frames=True)
+        results = accident_model(source, save=True, save_frames=True)
 
         for result in results:
             result.save("crop")
