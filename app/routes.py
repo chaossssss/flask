@@ -7,6 +7,7 @@ from moviepy import VideoFileClip
 import shutil
 import cv2
 
+import requests
 
 model = YOLO("buou-best.pt")
 
@@ -82,6 +83,9 @@ def upload():
         else:
 
             results = model(source, save=True)
+
+            for result in results:
+                print(result.save_dir)
 
             if os.path.exists(
                 Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi"
@@ -159,6 +163,60 @@ def upload2():
             + "/"
             + filename.split(".")[0]
             + "_result.mp4"
+        )
+
+        return jsonify(
+            {
+                "code": 200,
+                "message": "Upload Success!",
+                "file_path": file_url,
+            }
+        )
+
+    return jsonify({"code": 400, "message": "File type not allowed"})
+
+
+# 交通事故
+@bp.route("/upload3", methods=["POST"])
+def upload3():
+    if "file" not in request.files:
+        return jsonify({"code": 400, "message": "No file part"})
+
+    file = request.files["file"]
+
+    if file.filename == "":
+        return jsonify({"code": 400, "message": "No selected file"})
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
+        # file.save(os.path.join(Config.UPLOAD_FOLDER, filename))
+        file.save(file_path)
+        source = "uploads/" + filename
+
+        results = model(source, save=True, save_frames=True)
+
+        for result in results:
+            result.save("crop")
+
+        if os.path.exists(
+            Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi"
+        ):
+            os.remove(Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi")
+        shutil.move(
+            results[0].save_dir + "/" + filename.split(".")[0] + ".avi",
+            Config.PREDICT_FOLDER,
+        )
+        convert_avi_to_mp4(
+            Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi",
+            Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".mp4",
+        )
+        file_url = (
+            request.host_url
+            + Config.PREDICT_FOLDER
+            + "/"
+            + filename.split(".")[0]
+            + ".mp4"
         )
 
         return jsonify(
