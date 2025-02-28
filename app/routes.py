@@ -10,7 +10,7 @@ import cv2
 import requests
 
 model = YOLO("buou-best.pt")
-
+accident_model = YOLO("accident-best.pt")
 
 bp = Blueprint("main", __name__)
 
@@ -36,6 +36,7 @@ def getToal(predictor):
 # 文件上传
 @bp.route("/upload", methods=["POST"])
 def upload():
+    catchFlag = False
     if "file" not in request.files:
         return jsonify({"code": 400, "message": "No file part"})
 
@@ -82,10 +83,13 @@ def upload():
         # 视频文件
         else:
 
-            results = model(source, save=True)
+            results = model(source, save=True, save_frames=True)
 
-            for result in results:
-                print(result.save_dir)
+            for index, result in enumerate(results):
+                print(index, result.verbose())
+                if result.verbose() != "(no detections)" and catchFlag == False:
+                    catchFlag = True
+                    result.save(filename=Config.PREDICT_FOLDER + "/catch-pic.jpg")
 
             if os.path.exists(
                 Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi"
@@ -107,12 +111,15 @@ def upload():
                 + filename.split(".")[0]
                 + ".mp4"
             )
-
+            catchFlag = False
             return jsonify(
                 {
                     "code": 200,
                     "message": "Upload Success!",
                     "file_path": file_url,
+                    "catch_file": request.host_url
+                    + Config.PREDICT_FOLDER
+                    + "/catch-pic.jpg",
                 }
             )
 
@@ -194,10 +201,11 @@ def upload3():
         file.save(file_path)
         source = "uploads/" + filename
 
-        results = model(source, save=True, save_frames=True)
+        results = accident_model(source, save=True, save_frames=True)
 
         for result in results:
             result.save("crop")
+            print("日志" + result.verbose())
 
         if os.path.exists(
             Config.PREDICT_FOLDER + "/" + filename.split(".")[0] + ".avi"
